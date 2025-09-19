@@ -1,6 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db");
+const contacts = require("./models/Contact");
 
 const app = express();
 const PORT = 5000;
@@ -19,6 +20,15 @@ app.get("/", (req, res) => {
   
 });
 
+
+app.get('/api/contact', async (req, res) => {
+  try {
+    const contact = await contacts.find();
+    res.json(contact);
+  } catch (err) {
+    res.status(500).json({ error: 'Error fetching ideas.' });
+  }
+});
 // Routes
 app.use("/api/contact", require("./routes/contactRoutes"));
 
