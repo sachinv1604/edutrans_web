@@ -4,3 +4,9 @@ node_modules/
 
 # Ignore environment files
 .env
+config
+server.js
+models
+routes
+public
+src
