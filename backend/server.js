@@ -42,15 +42,14 @@ const openai = new OpenAI({
 app.post('/chat', async (req, res) => {
   const { message, history } = req.body;
   try {
-    // Prepare context/history for the OpenAI API
+   
     const messages = [
-      ...(history || []), // add previous convo if sent
+      ...(history || []), 
       { role: 'user', content: message }
     ];
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo', // or 'gpt-4'
-      messages,
+      model: 'gpt-3.5-turbo',
       max_tokens: 150,
       temperature: 0.7
     });
@@ -63,7 +62,7 @@ app.post('/chat', async (req, res) => {
     res.status(500).json({ error: 'OpenAI error!' });
   }
 });
-// Routes
+
 app.use("/api/contact", require("./routes/contactRoutes"));
 
 app.listen(PORT, () => {
