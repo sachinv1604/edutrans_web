@@ -25,7 +25,7 @@ function Chatbot() {
 
     try {
       // Send user input + chat history to backend (which talks to OpenAI)
-      const res = await axios.post("http://localhost:3001/chat", {
+      const res = await axios.post("http://localhost:5000/chat", {
         message: userMessage,
         history: messages.map(msg => ({
           role: msg.user ? "user" : "assistant",

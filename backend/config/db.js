@@ -1,9 +1,5 @@
 const mongoose = require("mongoose");
 
-<<<<<<< HEAD
-
-=======
->>>>>>> main
 const connectDB = async () => {
   try {
     await mongoose.connect("mongodb://localhost:27017/eduweb", {
