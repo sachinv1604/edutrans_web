@@ -2,9 +2,14 @@ const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db");
 const contacts = require("./models/Contact");
+const OpenAI = require('openai');
+require('dotenv').config();
+
+
 
 const app = express();
 const PORT = 5000;
+
 
 // DB Connection
 connectDB();
@@ -29,6 +34,37 @@ app.get('/api/contact', async (req, res) => {
     res.json(contact);
   } catch (err) {
     res.status(500).json({ error: 'Error fetching ideas.' });
+  }
+});
+
+
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
+
+app.post('/chat', async (req, res) => {
+  const { message, history } = req.body;
+  try {
+    // Prepare context/history for the OpenAI API
+    const messages = [
+      ...(history || []), // add previous convo if sent
+      { role: 'user', content: message }
+    ];
+
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-3.5-turbo', // or 'gpt-4'
+      messages,
+      max_tokens: 150,
+      temperature: 0.7
+    });
+
+    res.json({
+      reply: completion.choices[0].message.content
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'OpenAI error!' });
   }
 });
 // Routes
