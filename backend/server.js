@@ -2,15 +2,21 @@ const express = require("express");
 const cors = require("cors");
 const connectDB = require("./config/db");
 const contacts = require("./models/Contact");
+<<<<<<< HEAD
 const OpenAI = require('openai');
 require('dotenv').config();
 
 
+=======
+>>>>>>> main
 
 const app = express();
 const PORT = 5000;
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> main
 // DB Connection
 connectDB();
 
@@ -36,6 +42,7 @@ app.get('/api/contact', async (req, res) => {
     res.status(500).json({ error: 'Error fetching ideas.' });
   }
 });
+<<<<<<< HEAD
 
 
 
@@ -67,6 +74,8 @@ app.post('/chat', async (req, res) => {
     res.status(500).json({ error: 'OpenAI error!' });
   }
 });
+=======
+>>>>>>> main
 // Routes
 app.use("/api/contact", require("./routes/contactRoutes"));
 

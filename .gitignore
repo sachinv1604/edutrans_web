@@ -1,7 +1,11 @@
 node_modules/
 build/
 dist/
+<<<<<<< HEAD
 backend/.env
 *.env*
+=======
+.env
+>>>>>>> main
 .env.local
 .DS_Store
