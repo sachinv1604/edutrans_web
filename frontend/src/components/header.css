@@ -68,3 +68,74 @@ img{
   background: #333;
   transition: all 0.2s ease;
 }
+/* ===== Responsive Navbar ===== */
+
+.nav-toggle {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.nav-toggle span {
+  display: block;
+  width: 25px;
+  height: 3px;
+  background: #000000;
+  margin: 5px 0;
+  transition: 0.3s;
+}
+
+/* Mobile view */
+@media (max-width: 768px) {
+  .nav-toggle {
+    display: block;
+  }
+
+  .nav-menu {
+    position: absolute;
+    top: 70px;
+    right: 0;
+    width: 100%;
+    background: #0f172a; /* dark blue/black */
+    flex-direction: column;
+    align-items: center;
+    display: none;
+    padding: 20px 0;
+  }
+
+  .nav-menu.active {
+    display: flex;
+  }
+
+  .nav-link {
+    margin: 10px 0;
+    font-size: 18px;
+  }
+}
+/* ===== Logo Responsive ===== */
+
+.nav-logo h2 {
+  font-size: 26px;
+  transition: all 0.3s ease;
+}
+
+/* Mobile view */
+@media (max-width: 768px) {
+  .nav-container {
+    justify-content: space-between;
+  }
+
+  .nav-logo {
+    margin-left: 8px;
+  }
+
+  .nav-logo h2 {
+    font-size: 18px;   /* Smaller text */
+  }
+
+  .nav-logo img {
+    height: 36px !important; /* Smaller logo */
+    margin-right: 8px !important;
+  }
+}

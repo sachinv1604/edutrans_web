@@ -13,10 +13,10 @@ root.render(
     <div style={{ width: '100%', height: '100%', position: 'fixed' }}>
   <DotGrid
     
-    dotSize={9}
-    gap={14}
-    baseColor="#120106ff"
-    activeColor="#eaedeeff"
+    dotSize={10}
+    gap={15}
+    baseColor="#5227FF"
+    activeColor="#5227FF"
     proximity={120}
     shockRadius={250}
     shockStrength={5}
@@ -25,7 +25,7 @@ root.render(
   />
 </div>
     <App />
-    <Chatbot />
+    
   </React.StrictMode>
 );
 

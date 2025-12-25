@@ -1,6 +1,6 @@
 .hero {
   padding: 120px 0 80px;
-  background: rgba(59, 130, 246, 0.08);
+  background: rgba(44, 255, 12, 0.08);
   text-align: center;
   position: relative;
   overflow: hidden;
@@ -11,8 +11,8 @@
 .hero-content {
   max-width: 800px;
   margin: 0 auto;
-  background-color: #789be8;
-  border-radius: 20px;
+  background-color: #f6f7f8;
+ 
   padding: 20px;
 }
 

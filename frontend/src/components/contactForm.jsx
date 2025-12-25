@@ -65,7 +65,7 @@ const ContactForm = () => {
 
   return (
     <section className="contact-section" id="contact">
-      <h2 className="section-header">Request a Demo</h2>
+      <h2 className="section-header">REQUEST A DEMO</h2>
       <form className="contact-form" onSubmit={handleSubmit}>
         <input
           type="text"
