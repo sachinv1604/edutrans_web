@@ -1,80 +1,64 @@
 'use client';
 import { useRef, useEffect, useCallback, useMemo } from 'react';
-import { gsap } from 'gsap';
-import { InertiaPlugin } from 'gsap/InertiaPlugin';
-
 import './DotGrid.css';
 
-gsap.registerPlugin(InertiaPlugin);
-
-const throttle = (func, limit) => {
-  let lastCall = 0;
-  return function (...args) {
-    const now = performance.now();
-    if (now - lastCall >= limit) {
-      lastCall = now;
-      func.apply(this, args);
-    }
-  };
-};
-
-function hexToRgb(hex) {
-  const m = hex.match(/^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i);
-  if (!m) return { r: 0, g: 0, b: 0 };
+function hexToRgba(hex) {
+  const cleaned = hex.replace('#', '');
+  if (cleaned.length === 3) {
+    const r = parseInt(cleaned[0] + cleaned[0], 16);
+    const g = parseInt(cleaned[1] + cleaned[1], 16);
+    const b = parseInt(cleaned[2] + cleaned[2], 16);
+    return { r, g, b, a: 1.0 };
+  }
+  const r = parseInt(cleaned.substring(0, 2), 16);
+  const g = parseInt(cleaned.substring(2, 4), 16);
+  const b = parseInt(cleaned.substring(4, 6), 16);
+  let a = 1.0;
+  if (cleaned.length === 8) {
+    a = parseInt(cleaned.substring(6, 8), 16) / 255;
+  }
   return {
-    r: parseInt(m[1], 16),
-    g: parseInt(m[2], 16),
-    b: parseInt(m[3], 16)
+    r: isNaN(r) ? 0 : r,
+    g: isNaN(g) ? 0 : g,
+    b: isNaN(b) ? 0 : b,
+    a: isNaN(a) ? 1.0 : a
   };
 }
 
 const DotGrid = ({
-  dotSize = 16,
-  gap = 32,
-  baseColor = '#5227FF',
-  activeColor = '#5227FF',
-  proximity = 150,
-  speedTrigger = 250,
-  shockRadius = 250,
-  shockStrength = 5,
-  maxSpeed = 5000,
-  resistance = 750,
-  returnDuration = 1.5,
+  dotSize = 3,
+  gap = 22,
+  baseColor = '#ffffff12',
+  activeColor = '#ffffff',
+  proximity = 120,
+  shockRadius = 180,
+  shockStrength = 18,
   className = '',
   style
 }) => {
   const wrapperRef = useRef(null);
   const canvasRef = useRef(null);
   const dotsRef = useRef([]);
-  const pointerRef = useRef({
-    x: 0,
-    y: 0,
-    vx: 0,
-    vy: 0,
-    speed: 0,
-    lastTime: 0,
-    lastX: 0,
-    lastY: 0
-  });
+  const pointerRef = useRef({ x: -1000, y: -1000 });
+  const shockwavesRef = useRef([]);
 
-  const baseRgb = useMemo(() => hexToRgb(baseColor), [baseColor]);
-  const activeRgb = useMemo(() => hexToRgb(activeColor), [activeColor]);
-
-  const circlePath = useMemo(() => {
-    if (typeof window === 'undefined' || !window.Path2D) return null;
-
-    const p = new window.Path2D();
-    p.arc(0, 0, dotSize / 2, 0, Math.PI * 2);
-    return p;
-  }, [dotSize]);
+  const baseRgba = useMemo(() => hexToRgba(baseColor), [baseColor]);
+  const activeRgba = useMemo(() => hexToRgba(activeColor), [activeColor]);
 
   const buildGrid = useCallback(() => {
     const wrap = wrapperRef.current;
     const canvas = canvasRef.current;
     if (!wrap || !canvas) return;
 
-    const { width, height } = wrap.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
+    // Secure fallback: use client window dimensions if container has no rect
+    let { width, height } = wrap.getBoundingClientRect();
+    if (!width || !height) {
+      width = window.innerWidth || 800;
+      height = window.innerHeight || 600;
+    }
+
+    // Set 1:1 pixel scaling for standard screen mapping
+    const dpr = 1;
 
     canvas.width = width * dpr;
     canvas.height = height * dpr;
@@ -101,15 +85,18 @@ const DotGrid = ({
       for (let x = 0; x < cols; x++) {
         const cx = startX + x * cell;
         const cy = startY + y * cell;
-        dots.push({ cx, cy, xOffset: 0, yOffset: 0, _inertiaApplied: false });
+        dots.push({
+          cx,
+          cy,
+          x: cx,
+          y: cy
+        });
       }
     }
     dotsRef.current = dots;
   }, [dotSize, gap]);
 
   useEffect(() => {
-    if (!circlePath) return;
-
     let rafId;
     const proxSq = proximity * proximity;
 
@@ -120,30 +107,95 @@ const DotGrid = ({
       if (!ctx) return;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      const { x: px, y: py } = pointerRef.current;
+      const px = pointerRef.current.x;
+      const py = pointerRef.current.y;
 
+      // 1. Update Click Shockwaves
+      shockwavesRef.current = shockwavesRef.current.filter(wave => {
+        wave.radius += wave.speed;
+        return wave.radius < wave.maxRadius;
+      });
+
+      // 2. Draw Spotlight Aura behind the dots at the cursor position
+      if (px !== -1000 && py !== -1000) {
+        const glowRad = proximity * 2.5; 
+        const grad = ctx.createRadialGradient(px, py, 0, px, py, glowRad);
+        grad.addColorStop(0, 'rgba(255, 255, 255, 0.38)');  
+        grad.addColorStop(0.25, 'rgba(6, 182, 212, 0.22)'); 
+        grad.addColorStop(0.55, 'rgba(99, 102, 241, 0.08)'); 
+        grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(px, py, glowRad, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 3. Draw Dots with smooth target-based interpolation
       for (const dot of dotsRef.current) {
-        const ox = dot.cx + dot.xOffset;
-        const oy = dot.cy + dot.yOffset;
+        let targetX = dot.cx;
+        let targetY = dot.cy;
+
+        // Repulsion from cursor
         const dx = dot.cx - px;
         const dy = dot.cy - py;
         const dsq = dx * dx + dy * dy;
 
-        let style = baseColor;
-        if (dsq <= proxSq) {
-          const dist = Math.sqrt(dsq);
-          const t = 1 - dist / proximity;
-          const r = Math.round(baseRgb.r + (activeRgb.r - baseRgb.r) * t);
-          const g = Math.round(baseRgb.g + (activeRgb.g - baseRgb.g) * t);
-          const b = Math.round(baseRgb.b + (activeRgb.b - baseRgb.b) * t);
-          style = `rgb(${r},${g},${b})`;
+        if (dsq < proxSq) {
+          const dist = Math.sqrt(dsq) || 1;
+          const force = (proximity - dist) / proximity; // 0 to 1
+          const displacement = force * 24; 
+          targetX += (dx / dist) * displacement;
+          targetY += (dy / dist) * displacement;
         }
 
-        ctx.save();
-        ctx.translate(ox, oy);
-        ctx.fillStyle = style;
-        ctx.fill(circlePath);
-        ctx.restore();
+        // Repulsion from shockwaves
+        for (const wave of shockwavesRef.current) {
+          const wdx = dot.cx - wave.x;
+          const wdy = dot.cy - wave.y;
+          const wdist = Math.hypot(wdx, wdy);
+          const ringWidth = 40;
+          const distToRing = Math.abs(wdist - wave.radius);
+
+          if (distToRing < ringWidth) {
+            const force = (ringWidth - distToRing) / ringWidth; 
+            const strength = force * wave.strength * (1 - wave.radius / wave.maxRadius);
+            targetX += (wdx / (wdist || 1)) * strength;
+            targetY += (wdy / (wdist || 1)) * strength;
+          }
+        }
+
+        // Smooth position tracking (chase target position)
+        dot.x += (targetX - dot.x) * 0.12;
+        dot.y += (targetY - dot.y) * 0.12;
+
+        // Calculate opacity and size based on proximity to cursor
+        let fillStyle = baseColor;
+        let currentSize = dotSize;
+
+        const drawDx = dot.cx - px;
+        const drawDy = dot.cy - py;
+        const drawDsq = drawDx * drawDx + drawDy * drawDy;
+
+        if (drawDsq < proxSq) {
+          const dist = Math.sqrt(drawDsq);
+          const t = 1 - dist / proximity;
+
+          // Interpolate both RGB and Alpha channels cleanly
+          const r = Math.round(baseRgba.r + (activeRgba.r - baseRgba.r) * t);
+          const g = Math.round(baseRgba.g + (activeRgba.g - baseRgba.g) * t);
+          const b = Math.round(baseRgba.b + (activeRgba.b - baseRgba.b) * t);
+          const a = baseRgba.a + (activeRgba.a - baseRgba.a) * t;
+          fillStyle = `rgba(${r},${g},${b},${a})`;
+
+          // Enlarge dots dynamically
+          currentSize = dotSize + (3.0 * t);
+        }
+
+        ctx.beginPath();
+        ctx.arc(dot.x, dot.y, currentSize / 2, 0, Math.PI * 2);
+        ctx.fillStyle = fillStyle;
+        ctx.fill();
       }
 
       rafId = requestAnimationFrame(draw);
@@ -151,7 +203,7 @@ const DotGrid = ({
 
     draw();
     return () => cancelAnimationFrame(rafId);
-  }, [proximity, baseColor, activeRgb, baseRgb, circlePath]);
+  }, [proximity, baseColor, activeRgba, baseRgba, dotSize]);
 
   useEffect(() => {
     buildGrid();
@@ -170,91 +222,42 @@ const DotGrid = ({
 
   useEffect(() => {
     const onMove = e => {
-      const now = performance.now();
-      const pr = pointerRef.current;
-      const dt = pr.lastTime ? now - pr.lastTime : 16;
-      const dx = e.clientX - pr.lastX;
-      const dy = e.clientY - pr.lastY;
-      let vx = (dx / dt) * 1000;
-      let vy = (dy / dt) * 1000;
-      let speed = Math.hypot(vx, vy);
-      if (speed > maxSpeed) {
-        const scale = maxSpeed / speed;
-        vx *= scale;
-        vy *= scale;
-        speed = maxSpeed;
-      }
-      pr.lastTime = now;
-      pr.lastX = e.clientX;
-      pr.lastY = e.clientY;
-      pr.vx = vx;
-      pr.vy = vy;
-      pr.speed = speed;
-
+      if (!canvasRef.current) return;
       const rect = canvasRef.current.getBoundingClientRect();
-      pr.x = e.clientX - rect.left;
-      pr.y = e.clientY - rect.top;
+      pointerRef.current.x = e.clientX - rect.left;
+      pointerRef.current.y = e.clientY - rect.top;
+    };
 
-      for (const dot of dotsRef.current) {
-        const dist = Math.hypot(dot.cx - pr.x, dot.cy - pr.y);
-        if (speed > speedTrigger && dist < proximity && !dot._inertiaApplied) {
-          dot._inertiaApplied = true;
-          gsap.killTweensOf(dot);
-          const pushX = dot.cx - pr.x + vx * 0.005;
-          const pushY = dot.cy - pr.y + vy * 0.005;
-          gsap.to(dot, {
-            inertia: { xOffset: pushX, yOffset: pushY, resistance },
-            onComplete: () => {
-              gsap.to(dot, {
-                xOffset: 0,
-                yOffset: 0,
-                duration: returnDuration,
-                ease: 'elastic.out(1,0.75)'
-              });
-              dot._inertiaApplied = false;
-            }
-          });
-        }
-      }
+    const onLeave = () => {
+      pointerRef.current.x = -1000;
+      pointerRef.current.y = -1000;
     };
 
     const onClick = e => {
+      if (!canvasRef.current) return;
       const rect = canvasRef.current.getBoundingClientRect();
       const cx = e.clientX - rect.left;
       const cy = e.clientY - rect.top;
-      for (const dot of dotsRef.current) {
-        const dist = Math.hypot(dot.cx - cx, dot.cy - cy);
-        if (dist < shockRadius && !dot._inertiaApplied) {
-          dot._inertiaApplied = true;
-          gsap.killTweensOf(dot);
-          const falloff = Math.max(0, 1 - dist / shockRadius);
-          const pushX = (dot.cx - cx) * shockStrength * falloff;
-          const pushY = (dot.cy - cy) * shockStrength * falloff;
-          gsap.to(dot, {
-            inertia: { xOffset: pushX, yOffset: pushY, resistance },
-            onComplete: () => {
-              gsap.to(dot, {
-                xOffset: 0,
-                yOffset: 0,
-                duration: returnDuration,
-                ease: 'elastic.out(1,0.75)'
-              });
-              dot._inertiaApplied = false;
-            }
-          });
-        }
-      }
+      shockwavesRef.current.push({
+        x: cx,
+        y: cy,
+        radius: 0,
+        maxRadius: 240,
+        speed: 5,
+        strength: shockStrength
+      });
     };
 
-    const throttledMove = throttle(onMove, 50);
-    window.addEventListener('mousemove', throttledMove, { passive: true });
+    window.addEventListener('mousemove', onMove, { passive: true });
+    window.addEventListener('mouseleave', onLeave, { passive: true });
     window.addEventListener('click', onClick);
 
     return () => {
-      window.removeEventListener('mousemove', throttledMove);
+      window.removeEventListener('mousemove', onMove);
+      window.removeEventListener('mouseleave', onLeave);
       window.removeEventListener('click', onClick);
     };
-  }, [maxSpeed, speedTrigger, proximity, resistance, returnDuration, shockRadius, shockStrength]);
+  }, [shockStrength]);
 
   return (
     <section className={`dot-grid ${className}`} style={style}>

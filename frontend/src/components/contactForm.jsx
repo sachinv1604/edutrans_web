@@ -35,7 +35,7 @@ const ContactForm = () => {
       return;
     }
 
-    setStatus({ type: 'sending', message: 'Sending...' });
+    setStatus({ type: 'sending', message: 'Sending request...' });
 
     try {
       const response = await fetch('http://localhost:5000/api/contact', {
@@ -47,7 +47,7 @@ const ContactForm = () => {
       const result = await response.json();
 
       if (response.ok) {
-        setStatus({ type: 'success', message: result.message });
+        setStatus({ type: 'success', message: result.message || 'Demo request submitted successfully!' });
         setFormData({
           college: '',
           name: '',
@@ -56,7 +56,7 @@ const ContactForm = () => {
           students: '',
         });
       } else {
-        setStatus({ type: 'error', message: result.error });
+        setStatus({ type: 'error', message: result.error || 'Failed to submit.' });
       }
     } catch (error) {
       setStatus({ type: 'error', message: 'Failed to send request. Please try again.' });
@@ -65,54 +65,93 @@ const ContactForm = () => {
 
   return (
     <section className="contact-section" id="contact">
-      <h2 className="section-header">REQUEST A DEMO</h2>
-      <form className="contact-form" onSubmit={handleSubmit}>
-        <input
-          type="text"
-          name="college"
-          placeholder="College Name"
-          value={formData.college}
-          onChange={handleChange}
-          required
-        />
-        <input
-          type="text"
-          name="name"
-          placeholder="Your Name"
-          value={formData.name}
-          onChange={handleChange}
-          required
-        />
-        <input
-          type="email"
-          name="email"
-          placeholder="Email Address"
-          value={formData.email}
-          onChange={handleChange}
-          required
-        />
-        <input
-          type="tel"
-          name="phone"
-          placeholder="Phone Number"
-          value={formData.phone}
-          onChange={handleChange}
-          required
-        />
-        <input
-          type="number"
-          name="students"
-          placeholder="Number of Students"
-          value={formData.students}
-          onChange={handleChange}
-          required
-          min="1"
-        />
-        <button type="submit" className="btn btn-primary">Submit</button>
-        {status && <p className={`form-status ${status.type}`}>{status.message}</p>}
-      </form>
+      <div className="contact-container">
+        <div className="section-badge">GET STARTED</div>
+        <h2 className="section-header">Request a Live Demo</h2>
+        <p className="contact-subtitle">
+          Ready to revolutionize transportation at your college? Fill out your details below and our team will set up a live GPS system sandbox for your route coordinators.
+        </p>
+
+        <form className="glass-panel contact-form" onSubmit={handleSubmit}>
+          <div className="form-grid">
+            <div className="form-group">
+              <label className="form-label">College Name</label>
+              <input
+                type="text"
+                name="college"
+                placeholder="e.g. Stanford University"
+                value={formData.college}
+                onChange={handleChange}
+                required
+              />
+            </div>
+            
+            <div className="form-group">
+              <label className="form-label">Your Name</label>
+              <input
+                type="text"
+                name="name"
+                placeholder="e.g. Jane Doe"
+                value={formData.name}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Email Address</label>
+              <input
+                type="email"
+                name="email"
+                placeholder="e.g. jane@university.edu"
+                value={formData.email}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Phone Number</label>
+              <input
+                type="tel"
+                name="phone"
+                placeholder="e.g. +1 (555) 012-3456"
+                value={formData.phone}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="form-group full-width">
+              <label className="form-label">Estimated Student Commuters</label>
+              <input
+                type="number"
+                name="students"
+                placeholder="e.g. 850"
+                value={formData.students}
+                onChange={handleChange}
+                required
+                min="1"
+              />
+            </div>
+          </div>
+
+          <button type="submit" className="btn btn-primary submit-btn" disabled={status?.type === 'sending'}>
+            {status?.type === 'sending' ? 'Sending request...' : 'Schedule Free Demo Session'}
+          </button>
+
+          {status && (
+            <div className={`form-status-alert ${status.type}`}>
+              {status.type === 'success' && <span className="alert-icon">✓</span>}
+              {status.type === 'error' && <span className="alert-icon">✗</span>}
+              <p>{status.message}</p>
+            </div>
+          )}
+        </form>
+      </div>
     </section>
   );
 };
 
 export default ContactForm;
+
